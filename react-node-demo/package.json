@@ -1,0 +1,17 @@
+{
+  "name": "react-node-demo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && node index.js",
+    "client": "cd client && npm start",
+    "debug:server": "cd server && node --inspect=9229 index.js",
+    "debug:client": "cd client && set BROWSER=none && npm start",
+    "debug:full": "concurrently \"npm run debug:server\" \"npm run debug:client\"",
+    "debug": "node start-debug.js"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
