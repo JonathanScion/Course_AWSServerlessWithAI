@@ -40,7 +40,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Contractor Pay Calculator</h1>
+        <h1>Contractor Pay Calculator Plus</h1>
         <p>Calculate your bi-weekly pay after taxes (35%)</p>
 
         <form onSubmit={handleSubmit}>
