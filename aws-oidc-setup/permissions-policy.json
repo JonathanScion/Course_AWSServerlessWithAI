@@ -7,6 +7,7 @@
         "s3:*",
         "lambda:*",
         "apigateway:*",
+        "dynamodb:*",
         "iam:GetRole",
         "iam:CreateRole",
         "iam:DeleteRole",

@@ -4,7 +4,14 @@
       "Bash(git rm:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(terraform import:*)",
+      "Bash(terraform state:*)",
+      "Bash(aws s3 mb:*)",
+      "Bash(aws s3api put-bucket-versioning:*)",
+      "Bash(aws dynamodb create-table:*)",
+      "Bash(terraform init:*)",
+      "Bash(aws iam put-role-policy:*)"
     ],
     "deny": [],
     "ask": []
