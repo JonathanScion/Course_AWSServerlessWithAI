@@ -11,7 +11,8 @@
       "Bash(aws s3api put-bucket-versioning:*)",
       "Bash(aws dynamodb create-table:*)",
       "Bash(terraform init:*)",
-      "Bash(aws iam put-role-policy:*)"
+      "Bash(aws iam put-role-policy:*)",
+      "Bash(npm install)"
     ],
     "deny": [],
     "ask": []
