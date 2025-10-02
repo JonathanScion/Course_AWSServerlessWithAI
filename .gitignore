@@ -18,6 +18,11 @@ out/
 .aws-sam/
 samconfig.toml
 .serverless/
+*.tfplan
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
 
 # Logs
 logs/

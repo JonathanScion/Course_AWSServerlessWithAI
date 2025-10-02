@@ -1,0 +1,29 @@
+version: 2
+updates:
+  # Client dependencies
+  - package-ecosystem: "npm"
+    directory: "/react-node-demo/client"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      react:
+        patterns:
+          - "react*"
+      testing:
+        patterns:
+          - "@testing-library/*"
+          - "jest*"
+
+  # Server dependencies
+  - package-ecosystem: "npm"
+    directory: "/react-node-demo/server"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"

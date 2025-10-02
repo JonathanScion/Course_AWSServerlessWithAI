@@ -1,0 +1,84 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # Required for OIDC
+      contents: read    # Required to checkout code
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: |
+            react-node-demo/client/package-lock.json
+            react-node-demo/server/package-lock.json
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.0.0
+          terraform_wrapper: false
+
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Terraform Init
+        working-directory: ./react-node-demo/terraform
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: ./react-node-demo/terraform
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: ./react-node-demo/terraform
+        run: terraform apply -auto-approve tfplan
+
+      - name: Get Terraform Outputs
+        id: terraform
+        working-directory: ./react-node-demo/terraform
+        run: |
+          echo "api_url=$(terraform output -raw api_gateway_url)" >> $GITHUB_OUTPUT
+          echo "bucket_name=$(terraform output -raw s3_bucket_name)" >> $GITHUB_OUTPUT
+          echo "website_url=$(terraform output -raw website_url)" >> $GITHUB_OUTPUT
+
+      - name: Install client dependencies
+        working-directory: ./react-node-demo/client
+        run: npm ci
+
+      - name: Build React app
+        working-directory: ./react-node-demo/client
+        env:
+          REACT_APP_API_URL: ${{ steps.terraform.outputs.api_url }}
+        run: npm run build
+
+      - name: Deploy to S3
+        working-directory: ./react-node-demo/client
+        run: |
+          aws s3 sync build/ s3://${{ steps.terraform.outputs.bucket_name }} --delete
+
+      - name: Deployment Summary
+        run: |
+          echo "## 🚀 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **API URL:** ${{ steps.terraform.outputs.api_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Website URL:** ${{ steps.terraform.outputs.website_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Your application is now live! 🎉" >> $GITHUB_STEP_SUMMARY
