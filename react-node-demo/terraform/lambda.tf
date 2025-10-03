@@ -42,6 +42,21 @@ resource "aws_iam_role_policy" "lambda_dynamodb" {
           "dynamodb:Scan"
         ]
         Resource = aws_dynamodb_table.calculation_logs.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:PutMetricData"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "xray:PutTraceSegments",
+          "xray:PutTelemetryRecords"
+        ]
+        Resource = "*"
       }
     ]
   })
@@ -56,6 +71,10 @@ resource "aws_lambda_function" "calculator" {
   runtime         = "nodejs18.x"
   timeout         = 10
   memory_size     = 128
+
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {

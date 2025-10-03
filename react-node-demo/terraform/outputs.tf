@@ -27,3 +27,8 @@ output "dynamodb_table_name" {
   description = "Name of the DynamoDB table for calculation logs"
   value       = aws_dynamodb_table.calculation_logs.name
 }
+
+output "cloudwatch_dashboard_name" {
+  description = "Name of the CloudWatch Dashboard"
+  value       = aws_cloudwatch_dashboard.calculator_dashboard.dashboard_name
+}

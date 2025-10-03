@@ -1,11 +1,27 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
+const { CloudWatchClient, PutMetricDataCommand } = require('@aws-sdk/client-cloudwatch');
 const { randomUUID } = require('crypto');
 
-const client = new DynamoDBClient({});
-const docClient = DynamoDBDocumentClient.from(client);
+const dynamoClient = new DynamoDBClient({});
+const docClient = DynamoDBDocumentClient.from(dynamoClient);
+const cloudwatchClient = new CloudWatchClient({});
+
+// Helper function to send CloudWatch metrics
+async function sendMetrics(metricData) {
+  try {
+    await cloudwatchClient.send(new PutMetricDataCommand({
+      Namespace: 'SalaryCalculator',
+      MetricData: metricData
+    }));
+  } catch (error) {
+    console.error('Failed to send metrics:', error);
+  }
+}
 
 exports.handler = async (event) => {
+  const startTime = Date.now();
+
   const headers = {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
@@ -25,7 +41,23 @@ exports.handler = async (event) => {
     const body = JSON.parse(event.body || '{}');
     const { hourlyRate } = body;
 
+    // Metric: Request count
+    await sendMetrics([{
+      MetricName: 'RequestCount',
+      Value: 1,
+      Unit: 'Count',
+      Timestamp: new Date()
+    }]);
+
     if (!hourlyRate || isNaN(hourlyRate)) {
+      // Metric: Validation errors
+      await sendMetrics([{
+        MetricName: 'ValidationErrors',
+        Value: 1,
+        Unit: 'Count',
+        Timestamp: new Date()
+      }]);
+
       return {
         statusCode: 400,
         headers,
@@ -64,6 +96,30 @@ exports.handler = async (event) => {
       Item: logEntry
     }));
 
+    const duration = Date.now() - startTime;
+
+    // Send custom metrics to CloudWatch
+    await sendMetrics([
+      {
+        MetricName: 'SuccessfulCalculations',
+        Value: 1,
+        Unit: 'Count',
+        Timestamp: new Date()
+      },
+      {
+        MetricName: 'AverageHourlyRate',
+        Value: parseFloat(hourlyRate),
+        Unit: 'None',
+        Timestamp: new Date()
+      },
+      {
+        MetricName: 'ResponseTime',
+        Value: duration,
+        Unit: 'Milliseconds',
+        Timestamp: new Date()
+      }
+    ]);
+
     return {
       statusCode: 200,
       headers,
@@ -71,6 +127,15 @@ exports.handler = async (event) => {
     };
   } catch (error) {
     console.error('Error:', error);
+
+    // Metric: Error count
+    await sendMetrics([{
+      MetricName: 'Errors',
+      Value: 1,
+      Unit: 'Count',
+      Timestamp: new Date()
+    }]);
+
     return {
       statusCode: 500,
       headers,
