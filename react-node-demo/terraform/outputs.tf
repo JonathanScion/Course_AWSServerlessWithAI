@@ -22,3 +22,8 @@ output "website_url" {
   description = "Website URL"
   value       = "http://${aws_s3_bucket_website_configuration.frontend.website_endpoint}"
 }
+
+output "dynamodb_table_name" {
+  description = "Name of the DynamoDB table for calculation logs"
+  value       = aws_dynamodb_table.calculation_logs.name
+}

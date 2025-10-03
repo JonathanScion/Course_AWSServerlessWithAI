@@ -26,6 +26,27 @@ resource "aws_iam_role_policy_attachment" "lambda_basic" {
   role       = aws_iam_role.lambda_role.name
 }
 
+resource "aws_iam_role_policy" "lambda_dynamodb" {
+  name = "${var.project_name}-lambda-dynamodb"
+  role = aws_iam_role.lambda_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:PutItem",
+          "dynamodb:GetItem",
+          "dynamodb:Query",
+          "dynamodb:Scan"
+        ]
+        Resource = aws_dynamodb_table.calculation_logs.arn
+      }
+    ]
+  })
+}
+
 resource "aws_lambda_function" "calculator" {
   filename         = data.archive_file.lambda_zip.output_path
   function_name    = "${var.project_name}-calculator"
@@ -38,7 +59,8 @@ resource "aws_lambda_function" "calculator" {
 
   environment {
     variables = {
-      NODE_ENV = "production"
+      NODE_ENV       = "production"
+      DYNAMODB_TABLE = aws_dynamodb_table.calculation_logs.name
     }
   }
 }
