@@ -22,10 +22,13 @@ async function sendMetrics(metricData) {
 exports.handler = async (event) => {
   const startTime = Date.now();
 
+  // Get CloudFront domain from environment variable (set by Terraform)
+  const allowedOrigin = process.env.ALLOWED_ORIGIN || '*';
+
   const headers = {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'Content-Type,X-Api-Key',
     'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
   };
 
@@ -49,6 +52,7 @@ exports.handler = async (event) => {
       Timestamp: new Date()
     }]);
 
+    // Input validation
     if (!hourlyRate || isNaN(hourlyRate)) {
       // Metric: Validation errors
       await sendMetrics([{
@@ -62,6 +66,38 @@ exports.handler = async (event) => {
         statusCode: 400,
         headers,
         body: JSON.stringify({ error: 'Please provide a valid hourly rate' })
+      };
+    }
+
+    // Range validation
+    const rate = parseFloat(hourlyRate);
+    if (rate < 0) {
+      await sendMetrics([{
+        MetricName: 'ValidationErrors',
+        Value: 1,
+        Unit: 'Count',
+        Timestamp: new Date()
+      }]);
+
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'Hourly rate cannot be negative' })
+      };
+    }
+
+    if (rate > 10000) {
+      await sendMetrics([{
+        MetricName: 'ValidationErrors',
+        Value: 1,
+        Unit: 'Count',
+        Timestamp: new Date()
+      }]);
+
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'Hourly rate exceeds maximum allowed value (10000)' })
       };
     }
 

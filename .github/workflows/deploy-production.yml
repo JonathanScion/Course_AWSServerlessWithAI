@@ -58,6 +58,7 @@ jobs:
           echo "api_url=$(terraform output -raw api_gateway_url)" >> $GITHUB_OUTPUT
           echo "bucket_name=$(terraform output -raw s3_bucket_name)" >> $GITHUB_OUTPUT
           echo "website_url=$(terraform output -raw website_url)" >> $GITHUB_OUTPUT
+          echo "api_key=$(terraform output -raw api_key)" >> $GITHUB_OUTPUT
 
       - name: Install client dependencies
         working-directory: ./react-node-demo/client
@@ -67,6 +68,7 @@ jobs:
         working-directory: ./react-node-demo/client
         env:
           REACT_APP_API_URL: ${{ steps.terraform.outputs.api_url }}
+          REACT_APP_API_KEY: ${{ steps.terraform.outputs.api_key }}
         run: npm run build
 
       - name: Deploy to S3

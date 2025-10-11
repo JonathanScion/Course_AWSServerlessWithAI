@@ -19,7 +19,12 @@ output "lambda_function_name" {
 }
 
 output "website_url" {
-  description = "Website URL"
+  description = "Website URL (HTTPS via CloudFront)"
+  value       = "https://${aws_cloudfront_distribution.website.domain_name}"
+}
+
+output "s3_website_url" {
+  description = "S3 Website URL (deprecated - use CloudFront URL)"
   value       = "http://${aws_s3_bucket_website_configuration.frontend.website_endpoint}"
 }
 
@@ -31,4 +36,10 @@ output "dynamodb_table_name" {
 output "cloudwatch_dashboard_name" {
   description = "Name of the CloudWatch Dashboard"
   value       = aws_cloudwatch_dashboard.calculator_dashboard.dashboard_name
+}
+
+output "api_key" {
+  description = "API Gateway API Key (Sensitive - store securely)"
+  value       = aws_api_gateway_api_key.calculator_key.value
+  sensitive   = true
 }

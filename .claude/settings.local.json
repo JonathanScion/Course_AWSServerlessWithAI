@@ -12,7 +12,8 @@
       "Bash(aws dynamodb create-table:*)",
       "Bash(terraform init:*)",
       "Bash(aws iam put-role-policy:*)",
-      "Bash(npm install)"
+      "Bash(npm install)",
+      "Bash(terraform:*)"
     ],
     "deny": [],
     "ask": []

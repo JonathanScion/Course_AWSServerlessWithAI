@@ -15,10 +15,13 @@ function App() {
 
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api/calculate';
+      const apiKey = process.env.REACT_APP_API_KEY || '';
+
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Api-Key': apiKey,
         },
         body: JSON.stringify({ hourlyRate }),
       });

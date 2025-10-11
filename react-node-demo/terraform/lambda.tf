@@ -80,6 +80,7 @@ resource "aws_lambda_function" "calculator" {
     variables = {
       NODE_ENV       = "production"
       DYNAMODB_TABLE = aws_dynamodb_table.calculation_logs.name
+      ALLOWED_ORIGIN = "https://${aws_cloudfront_distribution.website.domain_name}"
     }
   }
 }
