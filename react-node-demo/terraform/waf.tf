@@ -76,45 +76,28 @@ resource "aws_wafv2_web_acl" "api_waf" {
     }
   }
 
-  # Rule 4: Block requests without API key header
-  rule {
-    name     = "RequireApiKeyHeader"
-    priority = 4
-
-    action {
-      block {
-        custom_response {
-          response_code = 403
-        }
-      }
-    }
-
-    statement {
-      not_statement {
-        statement {
-          byte_match_statement {
-            field_to_match {
-              single_header {
-                name = "x-api-key"
-              }
-            }
-            positional_constraint = "CONTAINS"
-            search_string         = ""
-            text_transformation {
-              priority = 0
-              type     = "NONE"
-            }
-          }
-        }
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "${var.project_name}-ApiKeyCheck"
-      sampled_requests_enabled   = true
-    }
-  }
+  # Rule 4: Geographic blocking (optional - currently allows all)
+  # Uncomment to restrict to specific countries
+  # rule {
+  #   name     = "GeoBlockRule"
+  #   priority = 4
+  #
+  #   action {
+  #     block {}
+  #   }
+  #
+  #   statement {
+  #     geo_match_statement {
+  #       country_codes = ["CN", "RU"]  # Block China and Russia
+  #     }
+  #   }
+  #
+  #   visibility_config {
+  #     cloudwatch_metrics_enabled = true
+  #     metric_name                = "${var.project_name}-GeoBlock"
+  #     sampled_requests_enabled   = true
+  #   }
+  # }
 
   visibility_config {
     cloudwatch_metrics_enabled = true
