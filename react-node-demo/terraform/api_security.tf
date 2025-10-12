@@ -31,16 +31,3 @@ resource "aws_api_gateway_usage_plan_key" "main" {
   key_type      = "API_KEY"
   usage_plan_id = aws_api_gateway_usage_plan.calculator_plan.id
 }
-
-# Update API Gateway method to require API key
-resource "aws_api_gateway_method" "calculate_post_secured" {
-  rest_api_id      = aws_api_gateway_rest_api.api.id
-  resource_id      = aws_api_gateway_resource.calculate_resource.id
-  http_method      = "POST"
-  authorization    = "NONE"
-  api_key_required = true
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
