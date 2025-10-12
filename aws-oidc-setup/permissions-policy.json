@@ -21,6 +21,7 @@
         "iam:ListAttachedRolePolicies",
         "logs:*",
         "cloudwatch:*",
+        "wafv2:*",
         "cloudformation:*",
         "ec2:DescribeSecurityGroups",
         "ec2:DescribeSubnets",
