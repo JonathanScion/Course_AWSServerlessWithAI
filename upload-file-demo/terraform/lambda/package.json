@@ -1,0 +1,13 @@
+{
+  "name": "upload-file-demo-lambda",
+  "version": "1.0.0",
+  "description": "Lambda functions for file upload application",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.650.0",
+    "@aws-sdk/lib-dynamodb": "^3.650.0",
+    "@aws-sdk/client-s3": "^3.650.0",
+    "@aws-sdk/s3-request-presigner": "^3.650.0",
+    "aws-xray-sdk-core": "^3.9.0"
+  }
+}

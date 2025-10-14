@@ -1,0 +1,191 @@
+name: Deploy Upload File Demo
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'upload-file-demo/**'
+      - '.github/workflows/deploy-upload-demo.yml'
+  workflow_dispatch: # Allow manual trigger
+    inputs:
+      canary_percentage:
+        description: 'Canary traffic percentage (0-100)'
+        required: false
+        default: '10'
+      promote_canary:
+        description: 'Promote canary to production (yes/no)'
+        required: false
+        default: 'no'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # Required for OIDC
+      contents: read    # Required to checkout code
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: |
+            upload-file-demo/client/package-lock.json
+            upload-file-demo/terraform/lambda/package-lock.json
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.0.0
+          terraform_wrapper: false
+
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      # Deploy Infrastructure with Terraform
+      - name: Terraform Init
+        working-directory: ./upload-file-demo/terraform
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: ./upload-file-demo/terraform
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: ./upload-file-demo/terraform
+        run: terraform apply -auto-approve tfplan
+
+      - name: Get Terraform Outputs
+        id: terraform
+        working-directory: ./upload-file-demo/terraform
+        run: |
+          echo "api_url=$(terraform output -raw api_gateway_url)" >> $GITHUB_OUTPUT
+          echo "bucket_name=$(terraform output -raw s3_bucket_name)" >> $GITHUB_OUTPUT
+          echo "website_url=$(terraform output -raw website_url)" >> $GITHUB_OUTPUT
+          echo "api_key=$(terraform output -raw api_key)" >> $GITHUB_OUTPUT
+          echo "cloudfront_id=$(terraform output -raw cloudfront_distribution_id)" >> $GITHUB_OUTPUT
+
+      # Build and Deploy Frontend
+      - name: Install client dependencies
+        working-directory: ./upload-file-demo/client
+        run: npm ci
+
+      - name: Build React app
+        working-directory: ./upload-file-demo/client
+        env:
+          REACT_APP_API_URL: ${{ steps.terraform.outputs.api_url }}
+          REACT_APP_API_KEY: ${{ steps.terraform.outputs.api_key }}
+        run: npm run build
+
+      - name: Deploy to S3
+        working-directory: ./upload-file-demo/client
+        run: |
+          aws s3 sync build/ s3://${{ steps.terraform.outputs.bucket_name }} --delete
+          aws s3 cp s3://${{ steps.terraform.outputs.bucket_name }}/index.html s3://${{ steps.terraform.outputs.bucket_name }}/index.html \
+            --metadata-directive REPLACE \
+            --cache-control max-age=0,no-cache,no-store,must-revalidate \
+            --content-type text/html
+
+      - name: Invalidate CloudFront Cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ steps.terraform.outputs.cloudfront_id }} \
+            --paths "/*"
+
+      # Canary Deployment Management
+      - name: Configure Canary Deployment
+        if: github.event.inputs.canary_percentage != ''
+        run: |
+          CANARY_PCT=${{ github.event.inputs.canary_percentage }}
+          echo "Setting canary traffic to ${CANARY_PCT}%"
+
+          # Get API Gateway stage ARN
+          API_ID=$(aws apigateway get-rest-apis --query "items[?name=='upload-file-demo-api'].id" --output text)
+
+          # Update canary settings
+          aws apigateway update-stage \
+            --rest-api-id $API_ID \
+            --stage-name prod \
+            --patch-operations \
+              op=replace,path=/canarySettings/percentTraffic,value=${CANARY_PCT}
+
+      - name: Promote Canary to Production
+        if: github.event.inputs.promote_canary == 'yes'
+        run: |
+          echo "Promoting canary to production..."
+
+          # Get API Gateway ID
+          API_ID=$(aws apigateway get-rest-apis --query "items[?name=='upload-file-demo-api'].id" --output text)
+
+          # Get current deployment ID
+          DEPLOYMENT_ID=$(aws apigateway get-stage \
+            --rest-api-id $API_ID \
+            --stage-name prod \
+            --query 'deploymentId' \
+            --output text)
+
+          # Promote canary by removing canary settings
+          aws apigateway update-stage \
+            --rest-api-id $API_ID \
+            --stage-name prod \
+            --patch-operations \
+              op=remove,path=/canarySettings
+
+          echo "Canary promoted to production successfully!"
+
+      # Monitoring and Health Checks
+      - name: Wait for deployment to stabilize
+        run: |
+          echo "Waiting for deployment to stabilize..."
+          sleep 30
+
+      - name: Health Check
+        run: |
+          echo "Performing health check..."
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${{ steps.terraform.outputs.website_url }}")
+
+          if [ $HTTP_CODE -eq 200 ]; then
+            echo "Health check passed! (HTTP $HTTP_CODE)"
+          else
+            echo "Health check failed! (HTTP $HTTP_CODE)"
+            exit 1
+          fi
+
+      - name: Deployment Summary
+        run: |
+          echo "## 🚀 Upload File Demo Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployment Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **API URL:** ${{ steps.terraform.outputs.api_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Website URL:** ${{ steps.terraform.outputs.website_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **CloudFront Distribution ID:** ${{ steps.terraform.outputs.cloudfront_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Features Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ File Upload with Drag & Drop" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ File Management (List, Download, Delete)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Full Observability (CloudWatch, X-Ray)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ WAF Protection" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Canary Deployment Ready" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ github.event.inputs.canary_percentage }}" != "" ]; then
+            echo "### Canary Deployment" >> $GITHUB_STEP_SUMMARY
+            echo "- **Traffic to Canary:** ${{ github.event.inputs.canary_percentage }}%" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ github.event.inputs.promote_canary }}" == "yes" ]; then
+            echo "✅ Canary promoted to production!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "Your application is now live! 🎉" >> $GITHUB_STEP_SUMMARY
