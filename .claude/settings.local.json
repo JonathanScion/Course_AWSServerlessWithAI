@@ -13,7 +13,20 @@
       "Bash(terraform init:*)",
       "Bash(aws iam put-role-policy:*)",
       "Bash(npm install)",
-      "Bash(terraform:*)"
+      "Bash(terraform:*)",
+      "Bash(aws iam delete-role-policy:*)",
+      "Bash(aws iam delete-role:*)",
+      "Bash(aws iam delete-open-id-connect-provider:*)",
+      "Bash(aws s3 rm:*)",
+      "Bash(aws s3 rb:*)",
+      "Bash(aws dynamodb delete-table:*)",
+      "Bash(aws logs describe-log-groups:*)",
+      "Bash(xargs:*)",
+      "Bash(grep:*)",
+      "Bash(while read log_group)",
+      "Bash(do aws logs delete-log-group --log-group-name \"$log_group\")",
+      "Bash(echo:*)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []
