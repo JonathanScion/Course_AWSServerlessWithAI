@@ -415,3 +415,7 @@ For issues or questions, please check:
 2. CloudWatch Dashboard
 3. X-Ray Service Map
 4. GitHub Issues
+
+---
+
+**Last Updated**: 2025-10-15 - OIDC authentication configured for GitHub Actions deployment
