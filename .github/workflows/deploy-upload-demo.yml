@@ -51,6 +51,11 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
 
+      # Install Lambda dependencies before Terraform
+      - name: Install Lambda dependencies
+        working-directory: ./upload-file-demo/terraform/lambda
+        run: npm ci
+
       # Deploy Infrastructure with Terraform
       - name: Terraform Init
         working-directory: ./upload-file-demo/terraform
