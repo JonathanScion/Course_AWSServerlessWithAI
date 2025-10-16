@@ -89,11 +89,11 @@ resource "aws_cloudwatch_dashboard" "main" {
         type = "metric"
         properties = {
           metrics = [
-            ["AWS/Lambda", "Invocations", { stat = "Sum", dimensions = { FunctionName = aws_lambda_function.upload.function_name } }],
-            ["...", { dimensions = { FunctionName = aws_lambda_function.list.function_name } }],
-            ["...", { dimensions = { FunctionName = aws_lambda_function.download.function_name } }],
-            ["...", { dimensions = { FunctionName = aws_lambda_function.delete.function_name } }],
-            ["...", { dimensions = { FunctionName = aws_lambda_function.confirm.function_name } }]
+            ["AWS/Lambda", "Invocations", "FunctionName", aws_lambda_function.upload.function_name],
+            ["...", "...", "...", aws_lambda_function.list.function_name],
+            ["...", "...", "...", aws_lambda_function.download.function_name],
+            ["...", "...", "...", aws_lambda_function.delete.function_name],
+            ["...", "...", "...", aws_lambda_function.confirm.function_name]
           ]
           period = 300
           stat   = "Sum"
@@ -110,11 +110,11 @@ resource "aws_cloudwatch_dashboard" "main" {
         type = "metric"
         properties = {
           metrics = [
-            ["AWS/Lambda", "Errors", { stat = "Sum", dimensions = { FunctionName = aws_lambda_function.upload.function_name } }],
-            ["...", { dimensions = { FunctionName = aws_lambda_function.list.function_name } }],
-            ["...", { dimensions = { FunctionName = aws_lambda_function.download.function_name } }],
-            ["...", { dimensions = { FunctionName = aws_lambda_function.delete.function_name } }],
-            ["...", { dimensions = { FunctionName = aws_lambda_function.confirm.function_name } }]
+            ["AWS/Lambda", "Errors", "FunctionName", aws_lambda_function.upload.function_name],
+            ["...", "...", "...", aws_lambda_function.list.function_name],
+            ["...", "...", "...", aws_lambda_function.download.function_name],
+            ["...", "...", "...", aws_lambda_function.delete.function_name],
+            ["...", "...", "...", aws_lambda_function.confirm.function_name]
           ]
           period = 300
           stat   = "Sum"
@@ -131,9 +131,9 @@ resource "aws_cloudwatch_dashboard" "main" {
         type = "metric"
         properties = {
           metrics = [
-            ["AWS/ApiGateway", "Count", { stat = "Sum", dimensions = { ApiName = aws_api_gateway_rest_api.api.name } }],
-            [".", "4XXError", { stat = "Sum", dimensions = { ApiName = aws_api_gateway_rest_api.api.name } }],
-            [".", "5XXError", { stat = "Sum", dimensions = { ApiName = aws_api_gateway_rest_api.api.name } }]
+            ["AWS/ApiGateway", "Count", "ApiName", aws_api_gateway_rest_api.api.name],
+            [".", "4XXError", ".", "."],
+            [".", "5XXError", ".", "."]
           ]
           period = 300
           stat   = "Sum"
@@ -150,8 +150,8 @@ resource "aws_cloudwatch_dashboard" "main" {
         type = "metric"
         properties = {
           metrics = [
-            ["AWS/DynamoDB", "ConsumedReadCapacityUnits", { stat = "Sum", dimensions = { TableName = aws_dynamodb_table.files_metadata.name } }],
-            [".", "ConsumedWriteCapacityUnits", { stat = "Sum", dimensions = { TableName = aws_dynamodb_table.files_metadata.name } }]
+            ["AWS/DynamoDB", "ConsumedReadCapacityUnits", "TableName", aws_dynamodb_table.files_metadata.name],
+            [".", "ConsumedWriteCapacityUnits", ".", "."]
           ]
           period = 300
           stat   = "Sum"
