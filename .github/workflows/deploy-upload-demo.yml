@@ -37,7 +37,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: |
             upload-file-demo/client/package-lock.json
-            upload-file-demo/terraform/lambda/package-lock.json
+            upload-file-demo/server/package-lock.json
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -51,9 +51,9 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
 
-      # Install Lambda dependencies before Terraform
-      - name: Install Lambda dependencies
-        working-directory: ./upload-file-demo/terraform/lambda
+      # Install server dependencies before Terraform
+      - name: Install server dependencies
+        working-directory: ./upload-file-demo/server
         run: npm ci
 
       # Deploy Infrastructure with Terraform

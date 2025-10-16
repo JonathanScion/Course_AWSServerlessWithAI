@@ -1,57 +1,57 @@
 # Install Lambda dependencies
 resource "null_resource" "lambda_dependencies" {
   triggers = {
-    package_json = filemd5("${path.module}/lambda/package.json")
+    package_json = filemd5("${path.module}/../server/package.json")
   }
 
   provisioner "local-exec" {
     command     = "npm install --production"
-    working_dir = "${path.module}/lambda"
+    working_dir = "${path.module}/../server"
   }
 }
 
 # Create Lambda deployment packages
 data "archive_file" "upload_lambda" {
   type        = "zip"
-  source_dir  = "${path.module}/lambda"
+  source_dir  = "${path.module}/../server"
   output_path = "${path.module}/.terraform/lambda-upload.zip"
-  excludes    = ["*.zip"]
+  excludes    = ["*.zip", "README.md"]
 
   depends_on = [null_resource.lambda_dependencies]
 }
 
 data "archive_file" "list_lambda" {
   type        = "zip"
-  source_dir  = "${path.module}/lambda"
+  source_dir  = "${path.module}/../server"
   output_path = "${path.module}/.terraform/lambda-list.zip"
-  excludes    = ["*.zip"]
+  excludes    = ["*.zip", "README.md"]
 
   depends_on = [null_resource.lambda_dependencies]
 }
 
 data "archive_file" "download_lambda" {
   type        = "zip"
-  source_dir  = "${path.module}/lambda"
+  source_dir  = "${path.module}/../server"
   output_path = "${path.module}/.terraform/lambda-download.zip"
-  excludes    = ["*.zip"]
+  excludes    = ["*.zip", "README.md"]
 
   depends_on = [null_resource.lambda_dependencies]
 }
 
 data "archive_file" "delete_lambda" {
   type        = "zip"
-  source_dir  = "${path.module}/lambda"
+  source_dir  = "${path.module}/../server"
   output_path = "${path.module}/.terraform/lambda-delete.zip"
-  excludes    = ["*.zip"]
+  excludes    = ["*.zip", "README.md"]
 
   depends_on = [null_resource.lambda_dependencies]
 }
 
 data "archive_file" "confirm_lambda" {
   type        = "zip"
-  source_dir  = "${path.module}/lambda"
+  source_dir  = "${path.module}/../server"
   output_path = "${path.module}/.terraform/lambda-confirm.zip"
-  excludes    = ["*.zip"]
+  excludes    = ["*.zip", "README.md"]
 
   depends_on = [null_resource.lambda_dependencies]
 }
@@ -136,7 +136,7 @@ resource "aws_lambda_function" "upload" {
   filename         = data.archive_file.upload_lambda.output_path
   function_name    = "${var.project_name}-upload"
   role            = aws_iam_role.lambda_role.arn
-  handler         = "upload.handler"
+  handler         = "src/handlers/upload.handler"
   source_code_hash = data.archive_file.upload_lambda.output_base64sha256
   runtime         = "nodejs18.x"
   timeout         = 30
@@ -167,7 +167,7 @@ resource "aws_lambda_function" "list" {
   filename         = data.archive_file.list_lambda.output_path
   function_name    = "${var.project_name}-list"
   role            = aws_iam_role.lambda_role.arn
-  handler         = "list.handler"
+  handler         = "src/handlers/list.handler"
   source_code_hash = data.archive_file.list_lambda.output_base64sha256
   runtime         = "nodejs18.x"
   timeout         = 30
@@ -197,7 +197,7 @@ resource "aws_lambda_function" "download" {
   filename         = data.archive_file.download_lambda.output_path
   function_name    = "${var.project_name}-download"
   role            = aws_iam_role.lambda_role.arn
-  handler         = "download.handler"
+  handler         = "src/handlers/download.handler"
   source_code_hash = data.archive_file.download_lambda.output_base64sha256
   runtime         = "nodejs18.x"
   timeout         = 30
@@ -228,7 +228,7 @@ resource "aws_lambda_function" "delete" {
   filename         = data.archive_file.delete_lambda.output_path
   function_name    = "${var.project_name}-delete"
   role            = aws_iam_role.lambda_role.arn
-  handler         = "delete.handler"
+  handler         = "src/handlers/delete.handler"
   source_code_hash = data.archive_file.delete_lambda.output_base64sha256
   runtime         = "nodejs18.x"
   timeout         = 30
@@ -259,7 +259,7 @@ resource "aws_lambda_function" "confirm" {
   filename         = data.archive_file.confirm_lambda.output_path
   function_name    = "${var.project_name}-confirm"
   role            = aws_iam_role.lambda_role.arn
-  handler         = "confirm.handler"
+  handler         = "src/handlers/confirm.handler"
   source_code_hash = data.archive_file.confirm_lambda.output_base64sha256
   runtime         = "nodejs18.x"
   timeout         = 30
