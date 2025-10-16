@@ -20,10 +20,11 @@ variable "lambda_invoke_arn" {
 
 # OPTIONS method for CORS
 resource "aws_api_gateway_method" "options" {
-  rest_api_id   = var.rest_api_id
-  resource_id   = var.resource_id
-  http_method   = "OPTIONS"
-  authorization = "NONE"
+  rest_api_id      = var.rest_api_id
+  resource_id      = var.resource_id
+  http_method      = "OPTIONS"
+  authorization    = "NONE"
+  api_key_required = false
 }
 
 resource "aws_api_gateway_integration" "options" {
