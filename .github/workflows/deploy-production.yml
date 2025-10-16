@@ -5,6 +5,9 @@ on:
     branches:
       - main
       - master
+    paths:
+      - 'react-node-demo/**'
+      - '.github/workflows/deploy-production.yml'
   workflow_dispatch: # Allow manual trigger
 
 jobs:
