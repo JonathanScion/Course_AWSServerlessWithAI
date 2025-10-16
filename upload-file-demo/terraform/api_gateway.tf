@@ -104,11 +104,8 @@ resource "aws_api_gateway_deployment" "api" {
       module.list_method,
       module.download_method,
       module.delete_method,
-      aws_api_gateway_gateway_response.unauthorized,
-      aws_api_gateway_gateway_response.access_denied,
-      aws_api_gateway_gateway_response.missing_auth_token,
-      aws_api_gateway_gateway_response.default_4xx,
-      aws_api_gateway_gateway_response.default_5xx,
+      # Force redeployment for CORS fixes
+      "cors-fix-v2"
     ]))
   }
 
@@ -122,11 +119,6 @@ resource "aws_api_gateway_deployment" "api" {
     module.list_method,
     module.download_method,
     module.delete_method,
-    aws_api_gateway_gateway_response.unauthorized,
-    aws_api_gateway_gateway_response.access_denied,
-    aws_api_gateway_gateway_response.missing_auth_token,
-    aws_api_gateway_gateway_response.default_4xx,
-    aws_api_gateway_gateway_response.default_5xx,
   ]
 }
 
