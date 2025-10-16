@@ -187,6 +187,77 @@ resource "aws_api_gateway_usage_plan_key" "main" {
   usage_plan_id = aws_api_gateway_usage_plan.main.id
 }
 
+# Gateway Responses for CORS
+resource "aws_api_gateway_gateway_response" "unauthorized" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  response_type = "UNAUTHORIZED"
+  status_code   = "401"
+
+  response_parameters = {
+    "gatewayresponse.header.Access-Control-Allow-Origin"  = "'*'"
+    "gatewayresponse.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "gatewayresponse.header.Access-Control-Allow-Methods" = "'GET,POST,PUT,DELETE,OPTIONS'"
+  }
+
+  response_templates = {
+    "application/json" = "{\"message\":$context.error.messageString}"
+  }
+}
+
+resource "aws_api_gateway_gateway_response" "access_denied" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  response_type = "ACCESS_DENIED"
+  status_code   = "403"
+
+  response_parameters = {
+    "gatewayresponse.header.Access-Control-Allow-Origin"  = "'*'"
+    "gatewayresponse.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "gatewayresponse.header.Access-Control-Allow-Methods" = "'GET,POST,PUT,DELETE,OPTIONS'"
+  }
+
+  response_templates = {
+    "application/json" = "{\"message\":$context.error.messageString}"
+  }
+}
+
+resource "aws_api_gateway_gateway_response" "missing_auth_token" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  response_type = "MISSING_AUTHENTICATION_TOKEN"
+  status_code   = "403"
+
+  response_parameters = {
+    "gatewayresponse.header.Access-Control-Allow-Origin"  = "'*'"
+    "gatewayresponse.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "gatewayresponse.header.Access-Control-Allow-Methods" = "'GET,POST,PUT,DELETE,OPTIONS'"
+  }
+
+  response_templates = {
+    "application/json" = "{\"message\":$context.error.messageString}"
+  }
+}
+
+resource "aws_api_gateway_gateway_response" "default_4xx" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  response_type = "DEFAULT_4XX"
+
+  response_parameters = {
+    "gatewayresponse.header.Access-Control-Allow-Origin"  = "'*'"
+    "gatewayresponse.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "gatewayresponse.header.Access-Control-Allow-Methods" = "'GET,POST,PUT,DELETE,OPTIONS'"
+  }
+}
+
+resource "aws_api_gateway_gateway_response" "default_5xx" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  response_type = "DEFAULT_5XX"
+
+  response_parameters = {
+    "gatewayresponse.header.Access-Control-Allow-Origin"  = "'*'"
+    "gatewayresponse.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "gatewayresponse.header.Access-Control-Allow-Methods" = "'GET,POST,PUT,DELETE,OPTIONS'"
+  }
+}
+
 # CloudWatch Log Group for API Gateway
 resource "aws_cloudwatch_log_group" "api_gateway" {
   name              = "/aws/apigateway/${var.project_name}"
