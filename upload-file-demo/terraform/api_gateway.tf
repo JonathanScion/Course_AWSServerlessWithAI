@@ -126,24 +126,8 @@ resource "aws_api_gateway_stage" "prod" {
   rest_api_id   = aws_api_gateway_rest_api.api.id
   stage_name    = "prod"
 
-  xray_tracing_enabled = true
-
-  access_log_settings {
-    destination_arn = aws_cloudwatch_log_group.api_gateway.arn
-    format = jsonencode({
-      requestId      = "$context.requestId"
-      ip             = "$context.identity.sourceIp"
-      caller         = "$context.identity.caller"
-      user           = "$context.identity.user"
-      requestTime    = "$context.requestTime"
-      httpMethod     = "$context.httpMethod"
-      resourcePath   = "$context.resourcePath"
-      status         = "$context.status"
-      protocol       = "$context.protocol"
-      responseLength = "$context.responseLength"
-      errorMessage   = "$context.error.message"
-    })
-  }
+  # Note: X-Ray tracing and access logging disabled to avoid requiring account-level CloudWatch Logs role
+  # Lambda functions already have X-Ray tracing and log to CloudWatch, which provides comprehensive logging
 
   tags = local.common_tags
 }
@@ -160,7 +144,7 @@ resource "aws_api_gateway_stage" "canary" {
     deployment_id            = aws_api_gateway_deployment.api.id
   }
 
-  xray_tracing_enabled = true
+  # Note: X-Ray tracing disabled to avoid requiring account-level CloudWatch Logs role
 
   tags = local.common_tags
 }
