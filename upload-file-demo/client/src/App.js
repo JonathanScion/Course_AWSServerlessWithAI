@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import FileUpload from './components/FileUpload';
 import FileList from './components/FileList';
-import './App.css';
 
 function App() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -12,24 +11,24 @@ function App() {
   };
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>File Upload Demo</h1>
-        <p>Upload, manage, and download your files</p>
-      </header>
-
-      <main className="App-main">
-        <div className="container">
-          <FileUpload onUploadComplete={handleUploadComplete} />
-          <FileList refreshTrigger={refreshTrigger} />
+    <div className="min-h-screen p-8">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-8 pb-6 border-b-4 border-gray-900">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 uppercase tracking-tight">
+            File Manager
+          </h1>
+          <p className="text-lg text-gray-700 font-medium">
+            Upload, organize, and manage your documents
+          </p>
         </div>
-      </main>
 
-      <footer className="App-footer">
-        <p>
-          Powered by AWS Lambda, S3, DynamoDB, API Gateway, CloudFront, and React
-        </p>
-      </footer>
+        {/* Upload Section */}
+        <FileUpload onUploadComplete={handleUploadComplete} />
+
+        {/* Files List */}
+        <FileList refreshTrigger={refreshTrigger} />
+      </div>
     </div>
   );
 }

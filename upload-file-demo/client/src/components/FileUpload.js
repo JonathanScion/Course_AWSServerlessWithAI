@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import api from '../services/api';
-import './FileUpload.css';
 
 const FileUpload = ({ onUploadComplete }) => {
   const [uploading, setUploading] = useState(false);
@@ -64,74 +63,99 @@ const FileUpload = ({ onUploadComplete }) => {
   };
 
   return (
-    <div className="file-upload-container">
-      <h2>Upload File</h2>
+    <div className="bg-white border-4 border-gray-900 rounded-none p-8 mb-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-2 h-8 bg-blue-600"></div>
+        <h2 className="text-2xl font-bold text-gray-900 uppercase">Step 1: Upload File</h2>
+      </div>
 
+      {/* Drop Zone */}
       <div
         {...getRootProps()}
-        className={`dropzone ${isDragActive ? 'active' : ''} ${selectedFile ? 'has-file' : ''}`}
+        className={`drop-zone rounded-none p-16 text-center mb-6 cursor-pointer ${
+          isDragActive ? 'bg-blue-100' : 'bg-blue-50'
+        }`}
       >
         <input {...getInputProps()} />
         {selectedFile ? (
-          <div className="file-info">
-            <p className="file-name">{selectedFile.name}</p>
-            <p className="file-size">{formatFileSize(selectedFile.size)}</p>
+          <div>
+            <svg className="mx-auto h-20 w-20 text-green-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-xl font-bold text-gray-900 mb-2 uppercase">{selectedFile.name}</p>
+            <p className="text-base text-gray-600 font-medium mb-6">{formatFileSize(selectedFile.size)}</p>
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedFile(null);
               }}
-              className="remove-file-btn"
+              className="px-6 py-2 bg-red-600 text-white font-bold uppercase tracking-wide hover:bg-red-700 transition-colors border-2 border-red-600"
             >
-              Remove
+              Remove File
             </button>
           </div>
         ) : (
-          <div className="dropzone-text">
-            {isDragActive ? (
-              <p>Drop the file here...</p>
-            ) : (
-              <>
-                <p>Drag & drop a file here, or click to select</p>
-                <p className="dropzone-hint">Maximum file size: 100MB</p>
-              </>
-            )}
-          </div>
+          <>
+            <svg className="mx-auto h-20 w-20 text-blue-900 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <p className="text-xl font-bold text-gray-900 mb-2 uppercase">
+              {isDragActive ? 'Drop File Here' : 'Drag & Drop File Here'}
+            </p>
+            <p className="text-base text-gray-600 font-medium mb-6">Or click the button below</p>
+            <button
+              type="button"
+              className="px-8 py-3 bg-blue-900 text-white font-bold uppercase tracking-wide hover:bg-blue-800 transition-colors border-2 border-blue-900"
+            >
+              Choose File
+            </button>
+          </>
         )}
       </div>
 
-      <div className="description-input">
-        <label htmlFor="description">Description (optional):</label>
+      {/* Description Input */}
+      <div className="mb-6">
+        <label className="block text-sm font-bold text-gray-900 mb-3 uppercase tracking-wide">
+          File Description
+        </label>
         <textarea
-          id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Enter a description for this file..."
+          className="w-full px-4 py-3 border-3 border-gray-900 rounded-none focus:outline-none focus:ring-4 focus:ring-blue-300 resize-none font-medium"
           rows="3"
+          placeholder="Describe your file..."
           disabled={uploading}
         />
       </div>
 
+      {/* Progress Bar */}
       {uploading && (
-        <div className="progress-container">
-          <div className="progress-bar">
-            <div className="progress-fill" style={{ width: `${progress}%` }} />
+        <div className="mb-6">
+          <div className="w-full h-6 bg-gray-200 border-2 border-gray-900 mb-2">
+            <div
+              className="h-full bg-blue-600 transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
           </div>
-          <p className="progress-text">{progress}% uploaded</p>
+          <p className="text-sm font-bold text-gray-700 uppercase text-center">
+            {progress}% Uploaded
+          </p>
         </div>
       )}
 
+      {/* Error Message */}
       {error && (
-        <div className="error-message">
-          <p>{error}</p>
+        <div className="mb-6 p-4 bg-red-100 border-3 border-red-600">
+          <p className="text-red-800 font-bold">{error}</p>
         </div>
       )}
 
+      {/* Submit Button */}
       <button
         onClick={handleUpload}
         disabled={!selectedFile || uploading}
-        className="upload-btn"
+        className="w-full py-4 bg-[#ff6b5a] text-white font-bold uppercase tracking-wide hover:bg-[#ff5544] transition-colors border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {uploading ? 'Uploading...' : 'Upload File'}
       </button>
