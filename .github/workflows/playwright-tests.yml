@@ -1,0 +1,72 @@
+name: Playwright Tests
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'react-node-demo/client/**'
+      - '.github/workflows/playwright-tests.yml'
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - 'react-node-demo/client/**'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: react-node-demo/client/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./react-node-demo/client
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: ./react-node-demo/client
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        working-directory: ./react-node-demo/client
+        run: npm run test:e2e
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: react-node-demo/client/playwright-report/
+          retention-days: 30
+
+      - name: Upload test screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-screenshots
+          path: react-node-demo/client/test-results/
+          retention-days: 7
+
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "## 🎭 Playwright Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f react-node-demo/client/playwright-report/index.html ]; then
+            echo "✅ Tests completed. View the full report in artifacts." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Tests may have failed. Check the logs and screenshots." >> $GITHUB_STEP_SUMMARY
+          fi
