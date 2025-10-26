@@ -29,7 +29,8 @@ resource "aws_bedrockagent_knowledge_base" "main" {
     aws_opensearchserverless_collection.vectors,
     aws_opensearchserverless_access_policy.data,
     aws_iam_role_policy.knowledge_base_s3,
-    aws_iam_role_policy.knowledge_base_opensearch
+    aws_iam_role_policy.knowledge_base_opensearch,
+    null_resource.create_opensearch_index
   ]
 
   tags = {

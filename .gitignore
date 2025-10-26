@@ -23,6 +23,7 @@ samconfig.toml
 .terraform/
 .terraform.lock.hcl
 lambda_packages/
+**/terraform/scripts/
 
 # CDK
 cdk.out/
