@@ -49,9 +49,4 @@ resource "aws_bedrockagent_data_source" "s3" {
       bucket_arn = aws_s3_bucket.documents.arn
     }
   }
-
-  tags = {
-    Name    = "${local.project_name}-data-source"
-    Project = local.project_name
-  }
 }
