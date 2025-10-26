@@ -7,7 +7,66 @@ Follow these steps to enable secure, keyless authentication from GitHub Actions 
 - Admin access to AWS account
 - Your GitHub repository name
 
-## Step-by-Step Instructions
+## Setup Options
+
+Choose either the **Terraform approach** (recommended) or **Manual approach**:
+
+---
+
+## Option A: Terraform Setup (Recommended)
+
+### Why Terraform?
+- ✅ Infrastructure as Code - version controlled and reproducible
+- ✅ Easy to tear down and recreate
+- ✅ Automatically includes all required permissions (including OpenSearch Serverless and Bedrock)
+- ✅ Self-documenting
+
+### Steps
+
+1. **Navigate to the setup directory**:
+   ```bash
+   cd aws-oidc-setup
+   ```
+
+2. **Initialize Terraform**:
+   ```bash
+   terraform init
+   ```
+
+3. **Review the plan**:
+   ```bash
+   terraform plan -var="github_org=YourGitHubUsername"
+   ```
+   Replace `YourGitHubUsername` with your actual GitHub username (e.g., `JonathanScion`)
+
+4. **Apply the configuration**:
+   ```bash
+   terraform apply -var="github_org=YourGitHubUsername"
+   ```
+
+5. **Copy the Role ARN from the output** and follow the instructions to add it to GitHub Secrets
+
+6. **Done!** Your OIDC setup is complete and version controlled.
+
+### Updating Permissions
+
+If you need to add more AWS permissions in the future:
+1. Edit `main.tf` and add the permissions to the policy
+2. Run `terraform apply -var="github_org=YourGitHubUsername"`
+3. Changes are automatically applied
+
+### Cleanup
+
+To remove the OIDC setup:
+```bash
+terraform destroy -var="github_org=YourGitHubUsername"
+```
+
+---
+
+## Option B: Manual Setup
+
+### Step-by-Step Instructions
 
 ### Step 1: Update Configuration Files
 

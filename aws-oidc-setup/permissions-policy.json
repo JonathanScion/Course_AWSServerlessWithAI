@@ -19,6 +19,9 @@
         "iam:GetRolePolicy",
         "iam:ListRolePolicies",
         "iam:ListAttachedRolePolicies",
+        "iam:TagRole",
+        "iam:UntagRole",
+        "iam:ListRoleTags",
         "logs:*",
         "cloudwatch:*",
         "wafv2:*",
@@ -26,7 +29,9 @@
         "cloudformation:*",
         "ec2:DescribeSecurityGroups",
         "ec2:DescribeSubnets",
-        "ec2:DescribeVpcs"
+        "ec2:DescribeVpcs",
+        "aoss:*",
+        "bedrock:*"
       ],
       "Resource": "*"
     }
