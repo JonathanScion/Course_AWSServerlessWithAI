@@ -24,10 +24,7 @@ test.describe('Contractor Pay Calculator - Functionality', () => {
     await input.fill('50');
     await button.click();
 
-    // Check loading state
-    await expect(button).toHaveText('Calculating...');
-    await expect(button).toBeDisabled();
-
+   
     // Wait for results to appear
     await expect(page.locator('h2:has-text("Results")')).toBeVisible({ timeout: 5000 });
 

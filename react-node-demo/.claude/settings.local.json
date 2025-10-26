@@ -6,7 +6,10 @@
       "Bash(npm install:*)",
       "WebSearch",
       "Bash(mkdir:*)",
-      "Bash(aws s3 sync:*)"
+      "Bash(aws s3 sync:*)",
+      "Bash(npx playwright test:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []

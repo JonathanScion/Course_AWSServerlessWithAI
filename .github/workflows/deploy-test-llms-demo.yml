@@ -1,0 +1,97 @@
+name: Deploy Test LLMs Demo
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'test-llms-demo/**'
+      - '.github/workflows/deploy-test-llms-demo.yml'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # Required for OIDC
+      contents: read    # Required to checkout code
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: test-llms-demo/frontend/package-lock.json
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.0.0
+          terraform_wrapper: false
+
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Terraform Init
+        working-directory: ./test-llms-demo/terraform
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: ./test-llms-demo/terraform
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: ./test-llms-demo/terraform
+        run: terraform apply -auto-approve tfplan
+
+      - name: Get Terraform Outputs
+        id: terraform
+        working-directory: ./test-llms-demo/terraform
+        run: |
+          echo "api_url=$(terraform output -raw api_gateway_url)" >> $GITHUB_OUTPUT
+          echo "cloudfront_url=$(terraform output -raw cloudfront_url)" >> $GITHUB_OUTPUT
+          echo "bucket_name=$(terraform output -raw frontend_bucket_name)" >> $GITHUB_OUTPUT
+          echo "distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> $GITHUB_OUTPUT
+
+      - name: Install frontend dependencies
+        working-directory: ./test-llms-demo/frontend
+        run: npm ci
+
+      - name: Build React app
+        working-directory: ./test-llms-demo/frontend
+        env:
+          REACT_APP_API_URL: ${{ steps.terraform.outputs.api_url }}
+        run: npm run build
+
+      - name: Deploy to S3
+        working-directory: ./test-llms-demo/frontend
+        run: |
+          aws s3 sync build/ s3://${{ steps.terraform.outputs.bucket_name }} --delete
+
+      - name: Invalidate CloudFront Cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ steps.terraform.outputs.distribution_id }} \
+            --paths "/*"
+
+      - name: Deployment Summary
+        run: |
+          echo "## 🚀 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **API URL:** ${{ steps.terraform.outputs.api_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Website URL:** ${{ steps.terraform.outputs.cloudfront_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Your Multi-LLM RAG application is now live! 🎉" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Upload documents via the frontend interface" >> $GITHUB_STEP_SUMMARY
+          echo "2. Wait for the knowledge base to sync (automatic)" >> $GITHUB_STEP_SUMMARY
+          echo "3. Start asking questions to the chatbot" >> $GITHUB_STEP_SUMMARY

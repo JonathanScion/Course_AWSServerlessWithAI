@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# CDK
+.cdk.staging/
+cdk.out/
+
+# Environment variables
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build outputs
+dist/
+build/
+*.js.map
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

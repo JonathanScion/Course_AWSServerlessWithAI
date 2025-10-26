@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cdk list:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

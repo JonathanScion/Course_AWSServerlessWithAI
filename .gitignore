@@ -22,6 +22,10 @@ samconfig.toml
 *.tfstate.backup
 .terraform/
 .terraform.lock.hcl
+lambda_packages/
+
+# CDK
+cdk.out/
 
 # Logs
 logs/
