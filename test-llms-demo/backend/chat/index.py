@@ -38,7 +38,7 @@ def retrieve_from_knowledge_base(query: str, max_results: int = 5):
         return []
 
 def query_claude(question: str, context: str):
-    """Query Claude Sonnet 4 via Bedrock"""
+    """Query Claude 3.5 Sonnet via Bedrock"""
     try:
         prompt = f"""You are a helpful assistant. Use the following context to answer the question.
 
@@ -62,7 +62,7 @@ Answer based on the context provided. If the context doesn't contain enough info
         })
 
         response = bedrock_runtime.invoke_model(
-            modelId='anthropic.claude-sonnet-4-20250514',
+            modelId='anthropic.claude-3-5-sonnet-20241022-v2:0',
             body=body
         )
 
@@ -70,7 +70,7 @@ Answer based on the context provided. If the context doesn't contain enough info
         answer = response_body['content'][0]['text']
 
         return {
-            'model': 'Claude Sonnet 4',
+            'model': 'Claude 3.5 Sonnet',
             'answer': answer,
             'status': 'success'
         }
@@ -78,7 +78,7 @@ Answer based on the context provided. If the context doesn't contain enough info
         print(f"Error querying Claude: {str(e)}")
         print(traceback.format_exc())
         return {
-            'model': 'Claude Sonnet 4',
+            'model': 'Claude 3.5 Sonnet',
             'answer': f'Error: {str(e)}',
             'status': 'error'
         }
@@ -125,7 +125,7 @@ Answer based on the context provided. If the context doesn't contain enough info
         }
 
 def query_titan(question: str, context: str):
-    """Query Amazon Titan via Bedrock"""
+    """Query Amazon Titan Express via Bedrock"""
     try:
         prompt = f"""You are a helpful assistant. Use the following context to answer the question.
 
@@ -146,7 +146,7 @@ Answer based on the context provided. If the context doesn't contain enough info
         })
 
         response = bedrock_runtime.invoke_model(
-            modelId='amazon.titan-text-premier-v1:0',
+            modelId='amazon.titan-text-express-v1',
             body=body
         )
 
@@ -154,7 +154,7 @@ Answer based on the context provided. If the context doesn't contain enough info
         answer = response_body['results'][0]['outputText']
 
         return {
-            'model': 'Amazon Titan Premier',
+            'model': 'Amazon Titan Express',
             'answer': answer,
             'status': 'success'
         }
@@ -162,7 +162,7 @@ Answer based on the context provided. If the context doesn't contain enough info
         print(f"Error querying Titan: {str(e)}")
         print(traceback.format_exc())
         return {
-            'model': 'Amazon Titan Premier',
+            'model': 'Amazon Titan Express',
             'answer': f'Error: {str(e)}',
             'status': 'error'
         }
