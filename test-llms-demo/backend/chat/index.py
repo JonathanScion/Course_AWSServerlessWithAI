@@ -62,7 +62,7 @@ Answer based on the context provided. If the context doesn't contain enough info
         })
 
         response = bedrock_runtime.invoke_model(
-            modelId='anthropic.claude-3-5-sonnet-20241022-v2:0',
+            modelId='us.anthropic.claude-3-5-sonnet-20241022-v2:0',
             body=body
         )
 
