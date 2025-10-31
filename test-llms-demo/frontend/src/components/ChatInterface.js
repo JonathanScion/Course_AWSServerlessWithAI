@@ -90,7 +90,7 @@ function ChatInterface() {
   };
 
   const getModelName = (modelKey) => {
-    if (modelKey === 'claude') return 'Claude 3.5 Sonnet';
+    if (modelKey === 'claude') return 'Claude Opus 4';
     if (modelKey === 'llama') return 'Meta Llama 3 70B';
     if (modelKey === 'titan') return 'Amazon Titan Express';
     return modelKey;
@@ -177,7 +177,7 @@ function ChatInterface() {
           <h2>Welcome to the Multi-LLM RAG Chatbot!</h2>
           <p>Ask a question and get answers from three different AI models simultaneously.</p>
           <div className="model-info">
-            <div className="model-badge claude">Claude Sonnet 4</div>
+            <div className="model-badge claude">Claude Opus 4</div>
             <div className="model-badge llama">Meta Llama 3 70B</div>
             <div className="model-badge titan">Amazon Titan</div>
           </div>
