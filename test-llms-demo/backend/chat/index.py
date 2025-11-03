@@ -62,7 +62,7 @@ Answer based on the context provided. If the context doesn't contain enough info
         })
 
         response = bedrock_runtime.invoke_model(
-            modelId='anthropic.claude-opus-4-20250514-v1:0',
+            modelId='anthropic.claude-3-haiku-20240307-v1:0',
             body=body
         )
 
@@ -70,7 +70,7 @@ Answer based on the context provided. If the context doesn't contain enough info
         answer = response_body['content'][0]['text']
 
         return {
-            'model': 'Claude Opus 4',
+            'model': 'Claude 3 Haiku',
             'answer': answer,
             'status': 'success'
         }
@@ -78,7 +78,7 @@ Answer based on the context provided. If the context doesn't contain enough info
         print(f"Error querying Claude: {str(e)}")
         print(traceback.format_exc())
         return {
-            'model': 'Claude Opus 4',
+            'model': 'Claude 3 Haiku',
             'answer': f'Error: {str(e)}',
             'status': 'error'
         }
