@@ -8,12 +8,16 @@ on:
     paths:
       - 'react-node-demo/client/**'
       - '.github/workflows/playwright-tests.yml'
+    paths-ignore:
+      - '**'  # Ignore all paths
   pull_request:
     branches:
       - main
       - master
     paths:
       - 'react-node-demo/client/**'
+    paths-ignore:
+      - '**'  # Ignore all paths
   workflow_dispatch: # Allow manual trigger
 
 jobs:

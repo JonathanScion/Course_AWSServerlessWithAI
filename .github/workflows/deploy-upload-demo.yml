@@ -8,6 +8,8 @@ on:
     paths:
       - 'upload-file-demo/**'
       - '.github/workflows/deploy-upload-demo.yml'
+    paths-ignore:
+      - '**'  # Ignore all paths
   workflow_dispatch: # Allow manual trigger
     inputs:
       canary_percentage:

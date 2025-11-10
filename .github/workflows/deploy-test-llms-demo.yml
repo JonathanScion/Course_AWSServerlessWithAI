@@ -8,6 +8,8 @@ on:
     paths:
       - 'test-llms-demo/**'
       - '.github/workflows/deploy-test-llms-demo.yml'
+    paths-ignore:
+      - '**'  # Ignore all paths
   workflow_dispatch: # Allow manual trigger
 
 jobs:
