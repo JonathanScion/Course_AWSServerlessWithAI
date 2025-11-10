@@ -1,0 +1,298 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// SIMPLE CRUD ENTITIES
+// ============================================
+
+model Department {
+  id          Int         @id @default(autoincrement())
+  code        String      @unique @db.VarChar(10)
+  name        String      @db.VarChar(200)
+  description String?     @db.Text
+  building    String?     @db.VarChar(100)
+  phone       String?     @db.VarChar(20)
+  email       String?     @db.VarChar(100)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  professors  Professor[]
+  courses     Course[]
+
+  @@map("departments")
+}
+
+model Building {
+  id          Int         @id @default(autoincrement())
+  code        String      @unique @db.VarChar(10)
+  name        String      @db.VarChar(200)
+  address     String      @db.VarChar(300)
+  floors      Int
+  hasElevator Boolean     @default(false)
+  builtYear   Int?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  classrooms  Classroom[]
+
+  @@map("buildings")
+}
+
+model Semester {
+  id         Int      @id @default(autoincrement())
+  code       String   @unique @db.VarChar(20)
+  name       String   @db.VarChar(100)
+  startDate  DateTime
+  endDate    DateTime
+  isActive   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  sections   Section[]
+
+  @@map("semesters")
+}
+
+// ============================================
+// PARENT-CHILD RELATIONSHIP ENTITIES
+// ============================================
+
+model Professor {
+  id           Int      @id @default(autoincrement())
+  employeeId   String   @unique @db.VarChar(20)
+  firstName    String   @db.VarChar(100)
+  lastName     String   @db.VarChar(100)
+  email        String   @unique @db.VarChar(100)
+  phone        String?  @db.VarChar(20)
+  officeRoom   String?  @db.VarChar(50)
+  title        String   @db.VarChar(100) // e.g., "Professor", "Associate Professor"
+  hireDate     DateTime
+  departmentId Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  department   Department    @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  sections     Section[]
+  officeHours  OfficeHour[]
+
+  @@map("professors")
+}
+
+model Classroom {
+  id         Int      @id @default(autoincrement())
+  roomNumber String   @db.VarChar(20)
+  buildingId Int
+  capacity   Int
+  hasProjector Boolean @default(false)
+  hasWhiteboard Boolean @default(true)
+  hasComputers Boolean @default(false)
+  floor      Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  building   Building   @relation(fields: [buildingId], references: [id], onDelete: Restrict)
+  schedules  Schedule[]
+
+  @@unique([buildingId, roomNumber])
+  @@map("classrooms")
+}
+
+model Student {
+  id             Int      @id @default(autoincrement())
+  studentId      String   @unique @db.VarChar(20)
+  firstName      String   @db.VarChar(100)
+  lastName       String   @db.VarChar(100)
+  email          String   @unique @db.VarChar(100)
+  phone          String?  @db.VarChar(20)
+  dateOfBirth    DateTime
+  enrollmentDate DateTime
+  status         String   @db.VarChar(20) @default("active") // active, graduated, withdrawn
+  major          String?  @db.VarChar(100)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  enrollments    Enrollment[]
+  grades         Grade[]
+
+  @@map("students")
+}
+
+// ============================================
+// MULTI-LEVEL HIERARCHY ENTITIES
+// ============================================
+
+model Course {
+  id            Int      @id @default(autoincrement())
+  code          String   @unique @db.VarChar(20)
+  name          String   @db.VarChar(200)
+  description   String?  @db.Text
+  credits       Int
+  departmentId  Int
+  level         String   @db.VarChar(20) // undergraduate, graduate
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  department       Department      @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  sections         Section[]
+  // Self-referential for prerequisites
+  prerequisites    Prerequisite[]  @relation("CoursePrerequisites")
+  requiredFor      Prerequisite[]  @relation("PrerequisiteFor")
+
+  @@map("courses")
+}
+
+model Section {
+  id           Int      @id @default(autoincrement())
+  sectionNumber String  @db.VarChar(10)
+  courseId     Int
+  semesterId   Int
+  professorId  Int?
+  capacity     Int
+  enrolled     Int      @default(0)
+  status       String   @db.VarChar(20) @default("open") // open, closed, cancelled
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  course       Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  semester     Semester     @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+  professor    Professor?   @relation(fields: [professorId], references: [id], onDelete: SetNull)
+  enrollments  Enrollment[]
+  assignments  Assignment[]
+  schedules    Schedule[]
+
+  @@unique([courseId, semesterId, sectionNumber])
+  @@map("sections")
+}
+
+model Assignment {
+  id          Int      @id @default(autoincrement())
+  title       String   @db.VarChar(200)
+  description String?  @db.Text
+  sectionId   Int
+  dueDate     DateTime
+  totalPoints Int
+  type        String   @db.VarChar(50) // homework, exam, project, quiz
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  section     Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  grades      Grade[]
+
+  @@map("assignments")
+}
+
+model Grade {
+  id           Int      @id @default(autoincrement())
+  assignmentId Int
+  studentId    Int
+  pointsEarned Float
+  submittedAt  DateTime?
+  gradedAt     DateTime?
+  feedback     String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+  @@map("grades")
+}
+
+// ============================================
+// MANY-TO-MANY RELATIONSHIP ENTITIES
+// ============================================
+
+model Enrollment {
+  id             Int      @id @default(autoincrement())
+  studentId      Int
+  sectionId      Int
+  enrolledAt     DateTime @default(now())
+  status         String   @db.VarChar(20) @default("enrolled") // enrolled, dropped, completed
+  finalGrade     String?  @db.VarChar(5) // A, B+, B, etc.
+  gradePoints    Float?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  section        Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, sectionId])
+  @@map("enrollments")
+}
+
+model Prerequisite {
+  id               Int      @id @default(autoincrement())
+  courseId         Int
+  prerequisiteId   Int
+  minimumGrade     String?  @db.VarChar(5) // Minimum grade required (e.g., "C")
+  createdAt        DateTime @default(now())
+
+  // Relations
+  course           Course   @relation("CoursePrerequisites", fields: [courseId], references: [id], onDelete: Cascade)
+  prerequisiteCourse Course @relation("PrerequisiteFor", fields: [prerequisiteId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, prerequisiteId])
+  @@map("prerequisites")
+}
+
+// ============================================
+// COMPLEX/COMPUTED ENTITIES
+// ============================================
+
+model Schedule {
+  id          Int      @id @default(autoincrement())
+  sectionId   Int
+  classroomId Int
+  dayOfWeek   String   @db.VarChar(10) // Monday, Tuesday, etc.
+  startTime   String   @db.VarChar(10) // HH:MM format
+  endTime     String   @db.VarChar(10) // HH:MM format
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  section     Section    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  classroom   Classroom  @relation(fields: [classroomId], references: [id], onDelete: Restrict)
+
+  @@map("schedules")
+}
+
+model OfficeHour {
+  id          Int      @id @default(autoincrement())
+  professorId Int
+  dayOfWeek   String   @db.VarChar(10) // Monday, Tuesday, etc.
+  startTime   String   @db.VarChar(10) // HH:MM format
+  endTime     String   @db.VarChar(10) // HH:MM format
+  location    String   @db.VarChar(100)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  professor   Professor @relation(fields: [professorId], references: [id], onDelete: Cascade)
+
+  @@map("office_hours")
+}
+
+// Note: Transcripts will be computed/aggregated data from Enrollments and Grades
+// We'll create a view or compute them on-the-fly in the API
