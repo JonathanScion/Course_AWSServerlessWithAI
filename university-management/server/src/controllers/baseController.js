@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const asyncHandler = require('../middleware/asyncHandler');
 const prisma = new PrismaClient();
 
 /**
@@ -15,7 +16,7 @@ class BaseController {
   /**
    * Get all records
    */
-  getAll = async (req, res) => {
+  getAll = asyncHandler(async (req, res) => {
     const { page = 1, limit = 100, sortBy = 'id', order = 'asc', ...filters } = req.query;
 
     // Build where clause from query params
@@ -54,12 +55,12 @@ class BaseController {
         totalPages: Math.ceil(total / parseInt(limit))
       }
     });
-  };
+  });
 
   /**
    * Get single record by ID
    */
-  getById = async (req, res) => {
+  getById = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
     const record = await this.model.findUnique({
@@ -72,12 +73,12 @@ class BaseController {
     }
 
     res.json(record);
-  };
+  });
 
   /**
    * Create new record
    */
-  create = async (req, res) => {
+  create = asyncHandler(async (req, res) => {
     const data = req.body;
 
     const record = await this.model.create({
@@ -86,12 +87,12 @@ class BaseController {
     });
 
     res.status(201).json(record);
-  };
+  });
 
   /**
    * Update existing record
    */
-  update = async (req, res) => {
+  update = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const data = req.body;
 
@@ -102,12 +103,12 @@ class BaseController {
     });
 
     res.json(record);
-  };
+  });
 
   /**
    * Delete record
    */
-  delete = async (req, res) => {
+  delete = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
     await this.model.delete({
@@ -115,7 +116,7 @@ class BaseController {
     });
 
     res.status(204).send();
-  };
+  });
 }
 
 module.exports = BaseController;

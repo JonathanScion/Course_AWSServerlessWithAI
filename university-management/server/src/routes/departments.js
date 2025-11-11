@@ -13,8 +13,12 @@ const departmentSchema = Joi.object({
   description: Joi.string().allow('', null),
   building: Joi.string().max(100).allow('', null),
   phone: Joi.string().max(20).allow('', null),
-  email: Joi.string().email().max(100).allow('', null)
-});
+  email: Joi.string().email().max(100).allow('', null),
+  // Allow but ignore these fields (sent by client but not used)
+  id: Joi.number().optional().strip(),
+  createdAt: Joi.date().optional().strip(),
+  updatedAt: Joi.date().optional().strip()
+}).unknown(false);  // Reject any other unknown fields
 
 // Routes
 router.get('/', controller.getAll);

@@ -2,7 +2,18 @@
  * Global error handling middleware
  */
 const errorHandler = (err, req, res, next) => {
-  console.error('Error:', err);
+  // Only log unexpected errors (not validation or known Prisma errors)
+  if (!err.isJoi && !err.code?.startsWith('P2')) {
+    console.error('Error:', err);
+  }
+
+  // Prisma database connection errors
+  if (err.constructor.name === 'PrismaClientInitializationError') {
+    return res.status(503).json({
+      error: 'Database connection error',
+      message: 'Cannot connect to database. Please ensure PostgreSQL is running.'
+    });
+  }
 
   // Prisma errors
   if (err.code === 'P2002') {

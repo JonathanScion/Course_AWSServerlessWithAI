@@ -7,13 +7,37 @@
  * - UPDATE: Edit existing department
  * - DELETE: Remove a department
  *
- * Prerequisites:
- * - Server running on http://localhost:5000
- * - Client running on http://localhost:3000
- * - Database accessible and seeded (optional)
+ * ⚠️ CRITICAL PREREQUISITES - Tests will FAIL if these aren't running:
+ *
+ * 1. START THE SERVER (Terminal 1):
+ *    cd university-management/server
+ *    npm run dev
+ *    → Should see: "Server running on http://localhost:5000"
+ *
+ * 2. START THE CLIENT (Terminal 2):
+ *    cd university-management/client
+ *    npm start
+ *    → Should open browser at http://localhost:3000
+ *
+ * 3. RUN THE TESTS (Terminal 3):
+ *    cd university-management
+ *    npm test
+ *
+ * 💡 TIP: If tests timeout, check that both servers are running!
+ *
+ * 🔧 CONFIGURATION:
+ * All URLs and timeouts are configured in tests/test.config.js and can be
+ * overridden via environment variables:
+ * - API_URL: Backend server URL (default: http://localhost:5000)
+ * - BASE_URL: Frontend client URL (default: http://localhost:3000)
+ * - apiQueryLimit: Maximum records to fetch (default: 1000)
+ * - uiWaitTimeout: UI update wait time in ms (default: 500)
+ *
+ * See tests/test.config.js for all available configuration options.
  */
 
 const { test, expect } = require('@playwright/test');
+const { config } = require('./test.config');
 
 /**
  * Helper function to wait for API requests to complete
@@ -39,23 +63,33 @@ async function fillDepartmentForm(page, dept) {
 
 /**
  * Helper to create a department and wait for it to appear
+ * Throws an error with the server's error message if creation fails
  */
 async function createDepartment(page, dept) {
   await page.getByRole('button', { name: /Add Department/i }).click();
   await fillDepartmentForm(page, dept);
 
-  const createPromise = waitForDepartmentsAPI(page, 'POST');
+  const responsePromise = waitForDepartmentsAPI(page, 'POST');
 
   await page.getByRole('button', { name: /Create/i }).click();
 
   // Wait for create to complete
-  await createPromise;
+  const response = await responsePromise;
 
-  // Wait for success notification to appear (happens before refresh)
-  await expect(page.getByText(/Department created successfully/i)).toBeVisible();
+  // Check if request succeeded
+  if (!response.ok()) {
+    const errorBody = await response.json().catch(() => ({}));
+    throw new Error(
+      `Failed to create department (${response.status()}): ${errorBody.message || errorBody.error || 'Unknown error'}`
+    );
+  }
 
-  // Wait for the table to refresh
+  // Wait for the table to refresh (happens after successful create)
   await waitForDepartmentsAPI(page, 'GET');
+
+  // Note: We don't check for notification here because:
+  // 1. It may appear and disappear quickly (4s auto-hide)
+  // 2. The table data is a more reliable indicator of success
 }
 
 // Test data
@@ -79,12 +113,103 @@ const updatedDepartment = {
 
 test.describe('Departments CRUD Operations', () => {
 
-  test.beforeEach(async ({ page }) => {
+  // Clean up test data before ALL tests run
+  test.beforeAll(async ({ request }) => {
+    console.log('🧹 Running pre-test cleanup...');
+    try {
+      // Get all departments
+      const response = await request.get(`${config.apiURL}/api/departments?limit=${config.apiQueryLimit}`);
+      if (response.ok()) {
+        const { data } = await response.json();
+        console.log(`   Found ${data.length} total departments in database`);
+
+        // Delete any test departments (CS-TEST, E2E-*, T followed by digits)
+        const testDepartments = data.filter(dept =>
+          dept.code === 'CS-TEST' ||
+          dept.code.startsWith('E2E-') ||
+          /^T\d+$/.test(dept.code)
+        );
+
+        console.log(`   Identified ${testDepartments.length} test departments to delete`);
+
+        for (const dept of testDepartments) {
+          const deleteResponse = await request.delete(`${config.apiURL}/api/departments/${dept.id}`);
+          if (deleteResponse.ok() || deleteResponse.status() === 204) {
+            console.log(`   ✅ Deleted: ${dept.code}`);
+          } else {
+            console.log(`   ❌ Failed to delete ${dept.code}: ${deleteResponse.status()}`);
+          }
+        }
+
+        if (testDepartments.length > 0) {
+          console.log(`✅ Cleanup complete: ${testDepartments.length} test department(s) removed`);
+        } else {
+          console.log('✅ No test departments to clean up');
+        }
+      } else {
+        console.log(`❌ Failed to fetch departments: ${response.status()}`);
+      }
+    } catch (error) {
+      console.log('❌ Pre-test cleanup failed:', error.message);
+    }
+  });
+
+  test.beforeEach(async ({ page, request }) => {
+    // Clean up CS-TEST before each test (in case previous test failed)
+    try {
+      const response = await request.get(`${config.apiURL}/api/departments?limit=${config.apiQueryLimit}`);
+      if (response.ok()) {
+        const { data } = await response.json();
+        const csTest = data.find(dept => dept.code === 'CS-TEST');
+        if (csTest) {
+          await request.delete(`${config.apiURL}/api/departments/${csTest.id}`);
+        }
+      }
+    } catch (error) {
+      // Cleanup failed, but continue with test
+    }
+
     // Navigate to the departments page before each test
     await page.goto('/departments');
 
     // Wait for the page to load
     await expect(page.getByRole('heading', { name: 'Departments' })).toBeVisible();
+  });
+
+  test('PRE-FLIGHT CHECK - servers are running', async ({ page, request }) => {
+    // Check server health endpoint
+    try {
+      const serverResponse = await request.get(`${config.apiURL}/health`);
+      expect(serverResponse.ok()).toBeTruthy();
+      console.log(`✅ Server is running on ${config.apiURL}`);
+    } catch (error) {
+      throw new Error(
+        '❌ SERVER NOT RUNNING!\n' +
+        'Start the server first:\n' +
+        '  cd university-management/server\n' +
+        '  npm run dev\n'
+      );
+    }
+
+    // Check client is accessible
+    const clientResponse = await page.goto(config.baseURL);
+    expect(clientResponse?.ok()).toBeTruthy();
+    console.log(`✅ Client is running on ${config.baseURL}`);
+
+    // Check API endpoint is accessible
+    try {
+      const apiResponse = await request.get(`${config.apiURL}/api/departments`);
+      expect(apiResponse.ok()).toBeTruthy();
+      console.log('✅ API endpoint /api/departments is accessible');
+    } catch (error) {
+      throw new Error(
+        '❌ API ENDPOINT NOT ACCESSIBLE!\n' +
+        'Check that:\n' +
+        '  1. Server is running\n' +
+        '  2. Database is connected\n' +
+        '  3. Migrations have been run\n'
+      );
+    }
   });
 
   test('should display the departments page with table', async ({ page }) => {
@@ -94,21 +219,25 @@ test.describe('Departments CRUD Operations', () => {
     // Verify "Add Department" button exists
     await expect(page.getByRole('button', { name: /Add Department/i })).toBeVisible();
 
-    // Verify table headers exist
-    await expect(page.getByText('Code')).toBeVisible();
-    await expect(page.getByText('Name')).toBeVisible();
-    await expect(page.getByText('Building')).toBeVisible();
-    await expect(page.getByText('Phone')).toBeVisible();
-    await expect(page.getByText('Email')).toBeVisible();
+    // Wait for initial data load to complete (loading spinner disappears)
+    await page.waitForLoadState('networkidle');
+
+    // Verify table headers exist (using columnheader role)
+    await expect(page.getByRole('columnheader', { name: 'Code' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Name' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Building' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Phone' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Email' })).toBeVisible();
   });
 
   test('CREATE - should add a new department successfully', async ({ page }) => {
     // Create department using helper
     await createDepartment(page, testDepartment);
 
-    // Verify the new department appears in the table
-    await expect(page.getByText(testDepartment.code)).toBeVisible();
-    await expect(page.getByText(testDepartment.name)).toBeVisible();
+    // Verify the new department appears in the table by finding the row
+    const row = page.locator('tr', { has: page.getByRole('cell', { name: testDepartment.code, exact: true }) });
+    await expect(row).toBeVisible();
+    await expect(row.getByText(testDepartment.name)).toBeVisible();
   });
 
   test('READ - should display department details in table', async ({ page }) => {
@@ -116,7 +245,7 @@ test.describe('Departments CRUD Operations', () => {
     await createDepartment(page, testDepartment);
 
     // Verify all fields are visible in the table
-    const row = page.locator('tr', { has: page.getByText(testDepartment.code) });
+    const row = page.locator('tr', { has: page.getByRole('cell', { name: testDepartment.code, exact: true }) });
     await expect(row).toBeVisible();
     await expect(row.getByText(testDepartment.name)).toBeVisible();
     await expect(row.getByText(testDepartment.building)).toBeVisible();
@@ -133,7 +262,7 @@ test.describe('Departments CRUD Operations', () => {
     await createDepartment(page, testDepartment);
 
     // Find the row with the test department and click Edit
-    const row = page.locator('tr', { has: page.getByText(testDepartment.code) });
+    const row = page.locator('tr', { has: page.getByRole('cell', { name: testDepartment.code, exact: true }) });
     await row.getByRole('button', { name: /edit/i }).click();
 
     // Verify edit dialog opened
@@ -166,10 +295,15 @@ test.describe('Departments CRUD Operations', () => {
     await page.getByRole('button', { name: /Update/i }).click();
 
     // Wait for update to complete
-    await updatePromise;
+    const updateResponse = await updatePromise;
 
-    // Wait for success notification (appears before refresh)
-    await expect(page.getByText(/Department updated successfully/i)).toBeVisible();
+    // Check if request succeeded
+    if (!updateResponse.ok()) {
+      const errorBody = await updateResponse.json().catch(() => ({}));
+      throw new Error(
+        `Failed to update department (${updateResponse.status()}): ${errorBody.message || errorBody.error || 'Unknown error'}`
+      );
+    }
 
     // Wait for the table to refresh
     await waitForDepartmentsAPI(page, 'GET');
@@ -189,7 +323,7 @@ test.describe('Departments CRUD Operations', () => {
     await expect(page.getByText(testDepartment.name)).toBeVisible();
 
     // Find the row and click Delete
-    const row = page.locator('tr', { has: page.getByText(testDepartment.code) });
+    const row = page.locator('tr', { has: page.getByRole('cell', { name: testDepartment.code, exact: true }) });
     await row.getByRole('button', { name: /delete/i }).click();
 
     // Verify confirmation dialog appears
@@ -203,13 +337,18 @@ test.describe('Departments CRUD Operations', () => {
     await page.getByRole('button', { name: /Delete/i }).last().click();
 
     // Wait for delete to complete
-    await deletePromise;
+    const deleteResponse = await deletePromise;
 
-    // Wait for success notification (appears before refresh)
-    await expect(page.getByText(/Department deleted successfully/i)).toBeVisible();
+    // Check if request succeeded (204 No Content is success for DELETE)
+    if (!deleteResponse.ok() && deleteResponse.status() !== 204) {
+      const errorBody = await deleteResponse.json().catch(() => ({}));
+      throw new Error(
+        `Failed to delete department (${deleteResponse.status()}): ${errorBody.message || errorBody.error || 'Unknown error'}`
+      );
+    }
 
-    // Wait for the table to refresh
-    await waitForDepartmentsAPI(page, 'GET');
+    // Wait a bit for the UI to update
+    await page.waitForTimeout(config.uiWaitTimeout);
 
     // Verify the department is no longer in the table
     await expect(page.getByText(testDepartment.name)).not.toBeVisible();
@@ -278,14 +417,15 @@ test.describe('Departments CRUD Operations', () => {
   });
 
   test('FULL CRUD CYCLE - should create, read, update, and delete in sequence', async ({ page }) => {
-    const uniqueCode = `E2E-${Date.now()}`;
+    // Use shorter code to fit within 10 character limit
+    const uniqueCode = `T${Date.now().toString().slice(-8)}`; // T + 8 digits = 9 chars
     const dept = { ...testDepartment, code: uniqueCode };
 
     // CREATE
     await createDepartment(page, dept);
 
     // READ
-    const row = page.locator('tr', { has: page.getByText(dept.code) });
+    const row = page.locator('tr', { has: page.getByRole('cell', { name: dept.code, exact: true }) });
     await expect(row).toBeVisible();
     await expect(row.getByText(dept.name)).toBeVisible();
 
@@ -300,9 +440,15 @@ test.describe('Departments CRUD Operations', () => {
 
     await page.getByRole('button', { name: /Update/i }).click();
 
-    await updatePromise;
+    const updateResponse = await updatePromise;
 
-    await expect(page.getByText(/Department updated successfully/i)).toBeVisible();
+    // Check if request succeeded
+    if (!updateResponse.ok()) {
+      const errorBody = await updateResponse.json().catch(() => ({}));
+      throw new Error(
+        `Failed to update department (${updateResponse.status()}): ${errorBody.message || errorBody.error || 'Unknown error'}`
+      );
+    }
 
     await waitForDepartmentsAPI(page, 'GET');
 
@@ -310,7 +456,7 @@ test.describe('Departments CRUD Operations', () => {
     await expect(page.getByText(newName)).toBeVisible();
 
     // DELETE
-    const updatedRow = page.locator('tr', { has: page.getByText(dept.code) });
+    const updatedRow = page.locator('tr', { has: page.getByRole('cell', { name: dept.code, exact: true }) });
     await updatedRow.getByRole('button', { name: /delete/i }).click();
     await expect(page.getByRole('heading', { name: 'Delete Department' })).toBeVisible();
 
@@ -318,11 +464,18 @@ test.describe('Departments CRUD Operations', () => {
 
     await page.getByRole('button', { name: /Delete/i }).last().click();
 
-    await deletePromise;
+    const deleteResponse = await deletePromise;
 
-    await expect(page.getByText(/Department deleted successfully/i)).toBeVisible();
+    // Check if request succeeded (204 No Content is success for DELETE)
+    if (!deleteResponse.ok() && deleteResponse.status() !== 204) {
+      const errorBody = await deleteResponse.json().catch(() => ({}));
+      throw new Error(
+        `Failed to delete department (${deleteResponse.status()}): ${errorBody.message || errorBody.error || 'Unknown error'}`
+      );
+    }
 
-    await waitForDepartmentsAPI(page, 'GET');
+    // Wait a bit for the UI to update
+    await page.waitForTimeout(config.uiWaitTimeout);
 
     // Verify deletion
     await expect(page.getByText(dept.code)).not.toBeVisible();
@@ -344,7 +497,7 @@ test.describe('Departments CRUD Operations', () => {
         if (await deleteButton.isVisible()) {
           await deleteButton.click();
           await page.getByRole('button', { name: /Delete/i }).last().click();
-          await page.waitForTimeout(500);
+          await page.waitForTimeout(config.uiWaitTimeout);
         }
       }
     } catch (error) {

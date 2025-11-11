@@ -18,7 +18,7 @@ module.exports = defineConfig({
   },
 
   // Run tests in files in parallel
-  fullyParallel: true,
+  fullyParallel: false,  // Changed to false to avoid race conditions with shared test data
 
   // Fail the build on CI if you accidentally left test.only in the source code
   forbidOnly: !!process.env.CI,
@@ -26,8 +26,8 @@ module.exports = defineConfig({
   // Retry on CI only
   retries: process.env.CI ? 2 : 0,
 
-  // Opt out of parallel tests on CI
-  workers: process.env.CI ? 1 : undefined,
+  // Run tests serially to avoid database conflicts
+  workers: 1,
 
   // Reporter to use
   reporter: [
@@ -52,6 +52,15 @@ module.exports = defineConfig({
 
     // Video on failure
     video: 'retain-on-failure',
+
+    // Test-specific configuration
+    extraHTTPHeaders: {
+      // Custom test configuration values
+      'X-Test-Config': JSON.stringify({
+        apiQueryLimit: 1000,        // Default limit for API queries
+        uiWaitTimeout: 500,         // Timeout for UI updates (ms)
+      })
+    }
   },
 
   // Configure projects for major browsers
